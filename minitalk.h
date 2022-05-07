@@ -2,7 +2,19 @@
 # define MINITALK_H
 typedef struct
 {
-	unsigned char	b;
+	union
+	{
+		int				len;
+		struct
+		{
+			char 	c1;
+			char	c2;
+			char	c3;
+			char	c4;
+		};
+	};
+	int				p;
 	unsigned char	i;
-}	t_byte;
+	char			*o;
+}	t_str;
 #endif
