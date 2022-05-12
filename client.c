@@ -35,26 +35,41 @@ void	send_char(int pid, char c)
 	}
 }
 
+void 	send_int(int server_pid, int i)
+{
+	char	*a; 
+	int 	index;
+
+	printf("sending int %i \n", i);
+	a = (char*) &i;
+	printf("[%hhx %hhx %hhx %hhx] \n", 
+		a[0], a[1], a[2], a[3]);
+	index = 0;
+	while (index < sizeof(int))
+		send_char(server_pid, a[index++]);
+}
+
+void	send_confirmation(int sig)
+{
+	write(1, "message sent successfully\n", 26);
+}
+
 int main(int ac, char **av)
 {
 	int 	pid;
 	int		i;
-	int		j;
-	int		leni;
-	char 	*len;
 
 	if (ac != 3)
 		return 1;
+	signal(SIGUSR1, send_confirmation);
 	pid = atoi(av[1]);
-	leni = ft_strlen(av[2]);
-	printf("-- leni: %i\n", leni);
-	len = (char*) &leni;
-	printf("%i %i %i %i\n", len[0], len[1], len[2], len[3]);
-	i = 0;
-	while (i < sizeof(int))
-		send_char(pid, len[i++]);
+	send_int(pid, getpid());
+	send_int(pid, ft_strlen(av[2]));
 	i = 0;
 	while (av[2][i])
 		send_char(pid, av[2][i++]);
-
+	while (1)
+	{
+		usleep(120);
+	}
 }

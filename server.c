@@ -4,97 +4,83 @@
 #include <stdlib.h>
 #include "minitalk.h"
 
-static	t_str	*get_str()
+static	t_minitalk	*get_minitalk()
 {
-	static t_str	str;
+	static t_minitalk	m;
 
-	return (&str);
+	return (&m);
 }
 
-void	set_bit(unsigned char	b)
+void	set_zero(char *c, int i)
 {
-	t_str	*str;
+	write(1, "0", 1);
+	*c	&= ~(1 << i);
+}
 
-	str = get_str();
-	// parse msg len
-	if (str->p < sizeof(int))
+void 	set_one(char *c, int i)
+{
+	write(1, "1", 1);
+	*c |= 1 << i;
+}
+
+void 	do_frame(void f(char *c, int i))
+{
+	t_minitalk	*m;
+
+	m = get_minitalk();
+	if (m->frame >= 0 && m->frame < sizeof(int) * 8)
 	{
-		if (b == 0)
+		f(((char*)(&(m->pid))) + (m->frame / 8), m->frame % 8);
+		m->frame += 1;
+	}
+	else if (m->frame >= sizeof(int) * 8 && m->frame < 2 * sizeof(int) * 8)
+	{
+		f(((char*)(&(m->len))) + (m->frame / 8) - sizeof(int)
+			, m->frame % 8);
+		if (m->frame + 1 == 2 * sizeof(int) * 8)
 		{
-			write(1, "len---0\n", 8);
-			((char*)&(str->len))[str->p] &= ~(1 << str->i);
+			m->o = malloc(m->len * sizeof(char));
+			printf("[pid=%hhx %hhx %hhx %hhx len=%hhx %hhx %hhx %hhx]\n", 
+				((char*)(&(m->pid)))[0],
+				((char*)(&(m->pid)))[1],
+				((char*)(&(m->pid)))[2],
+				((char*)(&(m->pid)))[3],
+				((char*)(&(m->len)))[0],
+				((char*)(&(m->len)))[1],
+				((char*)(&(m->len)))[2],
+				((char*)(&(m->len)))[3]
+			);
+			printf("[pid=%i len=%i]\n", *(int*)(char*) &(m->pid), m->len);
+		}
+		m->frame += 1;
+	}
+	else 
+	{
+		f(m->o + (m->frame / 8) - 2 * sizeof(int), m->frame % 8);
+		if (m->frame + 1 - 2 * sizeof(int) * 8 == m->len * 8)
+		{
+			write(1, m->o, m->len);
+			kill(m->pid, SIGUSR1);
+			if (m->o)
+				free(m->o);
+			*m = (t_minitalk) {0, 0, 0, 0};
+			write(1, "\n", 1);
 		}
 		else
 		{
-			write(1, "len---1\n", 8);
-			((char*)&(str->len))[str->p] |= 1 << str->i;
+			m->frame += 1;
 		}
-	}
-	// todo: parse pid
-	// parse msg
-	else
-	{
-		if (str->p == 4 && str->i == 0)
-		{
-			str->o = malloc(str->len);
-		}
-
-		if (b == 0)
-		{
-			str->o[str->p - sizeof(int)] &= ~(1 << str->i);
-		}
-		else
-		{
-			str->o[str->p - sizeof(int)] |= 1 << str->i;
-		}
-	}
-	str->i += 1;
-
-	if (str->i == 8)
-	{
-		str->i = 0;
-		str->p += 1;
-		printf("%i\n", str->p);
-	}
-	
-
-	if (str->p == sizeof(int) && str->i == 0)
-	{
-		t_str	b;
-	
-	
-		b.c1 = ((char*)&str->len)[0]; 
-		b.c2 =	((char*)&str->len)[1];
-		b.c3 =	((char*)&str->len)[2]; 
-		b.c4 =	((char*)&str->len)[3]; 
-		printf("blemn=%i\n", b.len);
-		printf("%i %i %i %i\n",
-				((char*)&str->len)[0], 
-				((char*)&str->len)[1], 
-				((char*)&str->len)[2], 
-				((char*)&str->len)[3]); 
-		printf("lemn=%i", str->len);
-	}
-
-	if (str->p - sizeof(int) == str->len)
-	{
-		write(1, str->o, str->len - sizeof(int));
-		str->p = 0;
-		str->i = 0;
-		str->o = 0;
-		str->len = 0;
-		// send success msg
 	}
 }
 
 void sig1(int sig)
 {
-	set_bit(0);
+	do_frame(set_zero);
 }
 
 void sig2(int sig)
 {
-	set_bit(1);
+	do_frame(set_one);
 }
 
 
