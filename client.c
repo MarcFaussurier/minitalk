@@ -6,7 +6,7 @@
 /*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/05/13 13:36:50 by mafaussu          #+#    #+#             */
-/*   Updated: 2022/05/13 15:23:52 by mafaussu         ###   ########lyon.fr   */
+/*   Updated: 2022/05/13 15:31:04 by mafaussu         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,11 +75,13 @@ int	main(int ac, char **av)
 	}
 	i = 0;
 	while (av[2][i])
+	{
 		if (send_char(pid, av[2][i++]))
 		{
 			write(1, "invalid server pid\n", 19);
 			return (1);
 		}
+	}
 	while (1)
 		;
 	return (0);
