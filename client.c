@@ -6,7 +6,7 @@
 /*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/05/13 13:36:50 by mafaussu          #+#    #+#             */
-/*   Updated: 2022/05/13 13:59:57 by mafaussu         ###   ########lyon.fr   */
+/*   Updated: 2022/05/13 14:17:33 by mafaussu         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include "minitalk.h"
 
-void	send_char(int pid, char c)
+int	send_char(int pid, char c)
 {
 	int	j;
 
@@ -24,18 +24,21 @@ void	send_char(int pid, char c)
 	{
 		if ((c & (1 << j)))
 		{
-			kill(pid, SIGUSR2);
+			if (kill(pid, SIGUSR2))
+				return (1);
 		}
 		else
 		{
-			kill(pid, SIGUSR1);
+			if (kill(pid, SIGUSR1))
+				return (1);
 		}
-		usleep(160);
+		usleep(42);
 		j += 1;
 	}
+	return (0);
 }
 
-void	send_int(int server_pid, int i)
+int	send_int(int server_pid, int i)
 {
 	char			*a;
 	unsigned int	index;
@@ -43,7 +46,9 @@ void	send_int(int server_pid, int i)
 	a = (char *) &i;
 	index = 0;
 	while (index < sizeof(int))
-		send_char(server_pid, a[index++]);
+		if (send_char(server_pid, a[index++]))
+			return (1);
+	return (0);
 }
 
 void	send_confirmation(int sig)
@@ -62,11 +67,22 @@ int	main(int ac, char **av)
 		return (1);
 	signal(SIGUSR1, send_confirmation);
 	pid = ft_atoi(av[1]);
-	send_int(pid, getpid());
-	send_int(pid, ft_strlen(av[2]));
+	if (send_int(pid, getpid())
+		|| send_int(pid, ft_strlen(av[2])))
+	{
+		write(1, "invalid server pid\n", 19);
+		return (1);
+	}
 	i = 0;
 	while (av[2][i])
-		send_char(pid, av[2][i++]);
+	{
+		if (send_char(pid, av[2][i++]))
+		{
+			write(1, "invalid server pid\n", 19);
+			return (1);
+		}
+	}
 	while (1)
-		usleep(4);
+		;
+	return (0);
 }
