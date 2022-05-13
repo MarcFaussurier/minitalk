@@ -1,96 +1,72 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   server.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/05/13 13:27:44 by mafaussu          #+#    #+#             */
+/*   Updated: 2022/05/13 13:52:38 by mafaussu         ###   ########lyon.fr   */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include "minitalk.h"
 
-static	t_minitalk	*get_minitalk()
+void	do_frame(void f(char *c, int i))
 {
 	static t_minitalk	m;
 
-	return (&m);
-}
-
-void	set_zero(char *c, int i)
-{
-	write(1, "0", 1);
-	*c	&= ~(1 << i);
-}
-
-void 	set_one(char *c, int i)
-{
-	write(1, "1", 1);
-	*c |= 1 << i;
-}
-
-void 	do_frame(void f(char *c, int i))
-{
-	t_minitalk	*m;
-
-	m = get_minitalk();
-	if (m->frame >= 0 && m->frame < sizeof(int) * 8)
+	if (m.frame >= 0 && m.frame < sizeof(int) * 8)
+		f(((char *)(&(m.pid))) + (m.frame / 8), (m.frame)++ % 8);
+	else if (m.frame >= sizeof(int) * 8 && m.frame < 2 * sizeof(int) * 8)
 	{
-		f(((char*)(&(m->pid))) + (m->frame / 8), m->frame % 8);
-		m->frame += 1;
+		f(((char *)(&(m.len))) + (m.frame / 8) - sizeof(int), m.frame % 8);
+		if (++(m.frame) == 2 * sizeof(int) * 8)
+			m.o = malloc(m.len * sizeof(char));
 	}
-	else if (m->frame >= sizeof(int) * 8 && m->frame < 2 * sizeof(int) * 8)
+	else
 	{
-		f(((char*)(&(m->len))) + (m->frame / 8) - sizeof(int)
-			, m->frame % 8);
-		if (m->frame + 1 == 2 * sizeof(int) * 8)
+		f(m.o + (m.frame / 8) - 2 * sizeof(int), m.frame % 8);
+		if (m.frame + 1 - 2 * sizeof(int) * 8 == m.len * 8)
 		{
-			m->o = malloc(m->len * sizeof(char));
-			printf("[pid=%hhx %hhx %hhx %hhx len=%hhx %hhx %hhx %hhx]\n", 
-				((char*)(&(m->pid)))[0],
-				((char*)(&(m->pid)))[1],
-				((char*)(&(m->pid)))[2],
-				((char*)(&(m->pid)))[3],
-				((char*)(&(m->len)))[0],
-				((char*)(&(m->len)))[1],
-				((char*)(&(m->len)))[2],
-				((char*)(&(m->len)))[3]
-			);
-			printf("[pid=%i len=%i]\n", *(int*)(char*) &(m->pid), m->len);
-		}
-		m->frame += 1;
-	}
-	else 
-	{
-		f(m->o + (m->frame / 8) - 2 * sizeof(int), m->frame % 8);
-		if (m->frame + 1 - 2 * sizeof(int) * 8 == m->len * 8)
-		{
-			write(1, m->o, m->len);
-			kill(m->pid, SIGUSR1);
-			if (m->o)
-				free(m->o);
-			*m = (t_minitalk) {0, 0, 0, 0};
+			write(1, m.o, m.len);
+			kill(m.pid, SIGUSR1);
+			if (m.o)
+				free(m.o);
+			m = (t_minitalk){0, 0, 0, 0};
 			write(1, "\n", 1);
 		}
 		else
-		{
-			m->frame += 1;
-		}
+			m.frame += 1;
 	}
 }
 
-void sig1(int sig)
+void	sig1(int sig)
 {
+	(void) sig;
 	do_frame(set_zero);
 }
 
-void sig2(int sig)
+void	sig2(int sig)
 {
+	(void) sig;
 	do_frame(set_one);
 }
 
-
-int main()
+int	main(void)
 {
-	printf("minitalk server started with pid %i\n", getpid());
+	char	pid[65];
+
+	ft_itoa(pid, getpid());
+	write(1, "minitalk server started with pid ", 33);
+	write(1, pid, ft_strlen(pid));
+	write(1, "\n", 1);
 	signal(SIGUSR1, sig1);
 	signal(SIGUSR2, sig2);
 	while (1)
-	{
-		usleep(80);
-	}
+		;
 }

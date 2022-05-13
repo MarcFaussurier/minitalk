@@ -1,33 +1,33 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   client.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/05/13 13:36:50 by mafaussu          #+#    #+#             */
+/*   Updated: 2022/05/13 13:51:11 by mafaussu         ###   ########lyon.fr   */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <unistd.h>
 #include <signal.h>
-
-int ft_strlen(char *str)
-{
-	int	o;
-
-	o = 0;
-	while (*str++)
-		o += 1;
-	return (o);
-}
+#include <stdlib.h>
+#include "minitalk.h"
 
 void	send_char(int pid, char c)
 {
-
 	int	j;
 
-	printf("-- %c\n", c);
 	j = 0;
 	while (j < 8)
 	{
 		if ((c & (1 << j)))
 		{
-			write(1, "1\n", 3);
 			kill(pid, SIGUSR2);
 		}
 		else
 		{
-			write(1, "0\n", 3);
 			kill(pid, SIGUSR1);
 		}
 		usleep(160);
@@ -35,15 +35,12 @@ void	send_char(int pid, char c)
 	}
 }
 
-void 	send_int(int server_pid, int i)
+void	send_int(int server_pid, int i)
 {
-	char	*a; 
-	int 	index;
+	char			*a;
+	unsigned int	index;
 
-	printf("sending int %i \n", i);
-	a = (char*) &i;
-	printf("[%hhx %hhx %hhx %hhx] \n", 
-		a[0], a[1], a[2], a[3]);
+	a = (char *) &i;
 	index = 0;
 	while (index < sizeof(int))
 		send_char(server_pid, a[index++]);
@@ -51,16 +48,18 @@ void 	send_int(int server_pid, int i)
 
 void	send_confirmation(int sig)
 {
+	(void) sig;
 	write(1, "message sent successfully\n", 26);
+	exit(0);
 }
 
-int main(int ac, char **av)
+int	main(int ac, char **av)
 {
-	int 	pid;
-	int		i;
+	int	pid;
+	int	i;
 
 	if (ac != 3)
-		return 1;
+		return (1);
 	signal(SIGUSR1, send_confirmation);
 	pid = atoi(av[1]);
 	send_int(pid, getpid());
@@ -69,7 +68,5 @@ int main(int ac, char **av)
 	while (av[2][i])
 		send_char(pid, av[2][i++]);
 	while (1)
-	{
-		usleep(120);
-	}
+		usleep(4);
 }
