@@ -6,7 +6,7 @@
 /*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/05/13 13:36:50 by mafaussu          #+#    #+#             */
-/*   Updated: 2022/05/13 14:17:33 by mafaussu         ###   ########lyon.fr   */
+/*   Updated: 2022/05/13 15:23:52 by mafaussu         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ int	main(int ac, char **av)
 	int	pid;
 	int	i;
 
-	if (ac != 3)
+	if (ac != 3 || !av[2][0])
 		return (1);
 	signal(SIGUSR1, send_confirmation);
 	pid = ft_atoi(av[1]);
@@ -75,13 +75,11 @@ int	main(int ac, char **av)
 	}
 	i = 0;
 	while (av[2][i])
-	{
 		if (send_char(pid, av[2][i++]))
 		{
 			write(1, "invalid server pid\n", 19);
 			return (1);
 		}
-	}
 	while (1)
 		;
 	return (0);
