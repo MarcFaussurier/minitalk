@@ -6,7 +6,7 @@
 /*   By: mafaussu <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/05/13 13:36:50 by mafaussu          #+#    #+#             */
-/*   Updated: 2022/05/13 13:51:11 by mafaussu         ###   ########lyon.fr   */
+/*   Updated: 2022/05/13 13:59:57 by mafaussu         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,7 @@ int	main(int ac, char **av)
 	if (ac != 3)
 		return (1);
 	signal(SIGUSR1, send_confirmation);
-	pid = atoi(av[1]);
+	pid = ft_atoi(av[1]);
 	send_int(pid, getpid());
 	send_int(pid, ft_strlen(av[2]));
 	i = 0;
